@@ -11,6 +11,9 @@ importers:
       '@astrojs/cloudflare':
         specifier: ^13.1.1
         version: 13.1.1(astro@6.0.4(rollup@4.59.0))(workerd@1.20260312.1)(wrangler@4.73.0)
+      '@mlc-ai/web-llm':
+        specifier: ^0.2.82
+        version: 0.2.82
       astro:
         specifier: ^6.0.4
         version: 6.0.4(rollup@4.59.0)
@@ -605,6 +608,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
+  '@mlc-ai/web-llm@0.2.82':
+    resolution: {integrity: sha512-ONhW+28PPVSUI1m0RkJcm7suwc47b65i5b/rTEIADq5I22p1+9uf/CBbDPRkkjj1WJB9s8oFp0ywAW0NY1G6fg==}
+
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
 
@@ -1197,6 +1203,10 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  loglevel@1.9.2:
+    resolution: {integrity: sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==}
+    engines: {node: '>= 0.6.0'}
 
   longest-streak@3.1.0:
     resolution: {integrity: sha512-9Ri+o0JYgehTaVBBDoMqIl8GXtbWg711O3srftcHhZ0dqnETqLaoIK0x17fUw9rFSlK/0NlsKe0Ahhyl5pXE2g==}
@@ -2290,6 +2300,10 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@mlc-ai/web-llm@0.2.82':
+    dependencies:
+      loglevel: 1.9.2
+
   '@oslojs/encoding@1.1.0': {}
 
   '@poppinss/colors@4.1.6':
@@ -2990,6 +3004,8 @@ snapshots:
       argparse: 2.0.1
 
   kleur@4.1.5: {}
+
+  loglevel@1.9.2: {}
 
   longest-streak@3.1.0: {}
 
