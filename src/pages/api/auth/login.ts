@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { ApiResponse, AuthResponse } from '../../../lib/types';
 import {
   generateToken,
@@ -25,7 +26,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ status: 'error', error: 'Invalid email address' } satisfies ApiResponse, 400);
     }
 
-    const db = (locals as any).runtime.env.DB;
+    const db = env.DB;
 
     const user = await getUserByEmail(db, normalizedEmail);
     if (!user) {

@@ -4,17 +4,17 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { getSessionToken, jsonResponse, decryptApiKey } from '../../lib/auth';
 import { getOpenRouterConnection } from '../../lib/db';
 import type { Message } from '../../lib/types';
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const runtime = (locals as any).runtime;
-  if (!runtime?.env?.DB) {
+export const POST: APIRoute = async ({ request }) => {
+  if (!env?.DB) {
     return jsonResponse({ status: 'error', error: 'Server not configured' }, 500);
   }
 
-  const db = runtime.env.DB;
+  const db = env.DB;
   const token = getSessionToken(request);
   if (!token) {
     return jsonResponse({ status: 'error', error: 'Not authenticated' }, 401);
@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse({ status: 'error', error: 'OpenRouter not connected' }, 400);
   }
 
-  const secret = runtime.env.ENCRYPTION_KEY || import.meta.env.ENCRYPTION_KEY || 'dev-encryption-key-not-for-prod!';
+  const secret = env.ENCRYPTION_KEY || import.meta.env.ENCRYPTION_KEY || 'dev-encryption-key-not-for-prod!';
   let apiKey: string;
   try {
     apiKey = await decryptApiKey(connection.encrypted_api_key, connection.iv, secret);

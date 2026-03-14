@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock cloudflare:workers — vi.mock is hoisted, so use vi.hoisted
+const { mockEnv } = vi.hoisted(() => {
+  const mockEnv: Record<string, any> = {};
+  return { mockEnv };
+});
+vi.mock('cloudflare:workers', () => ({ env: mockEnv }));
+
 import { POST as signupHandler } from '../src/pages/api/auth/signup';
 import { POST as loginHandler } from '../src/pages/api/auth/login';
 import { POST as logoutHandler } from '../src/pages/api/auth/logout';
@@ -111,10 +119,11 @@ function createContext(
   user?: any,
   url?: URL,
 ) {
+  // Set the mock env DB for cloudflare:workers import
+  mockEnv.DB = db;
   return {
     request,
     locals: {
-      runtime: { env: { DB: db } },
       user,
     },
     url: url || new URL(request.url),

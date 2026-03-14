@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { ApiResponse } from '../../../../lib/types';
 import { jsonResponse, decryptApiKey } from '../../../../lib/auth';
 import { getOpenRouterConnection } from '../../../../lib/db';
@@ -10,9 +11,8 @@ export const GET: APIRoute = async ({ locals }) => {
       return jsonResponse({ status: 'error', error: 'Not authenticated' } satisfies ApiResponse, 401);
     }
 
-    const runtime = (locals as any).runtime;
-    const db = runtime.env.DB;
-    const encryptionSecret = runtime.env.OPENROUTER_KEY_SECRET || 'ipsumm-default-dev-secret';
+    const db = env.DB;
+    const encryptionSecret = env.OPENROUTER_KEY_SECRET || 'ipsumm-default-dev-secret';
 
     const connection = await getOpenRouterConnection(db, user.id);
     if (!connection) {

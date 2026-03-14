@@ -1,4 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
+import { env } from 'cloudflare:workers';
 import { getSessionToken } from './lib/auth';
 
 // Routes that require authentication
@@ -17,11 +18,10 @@ function isAuthRoute(pathname: string): boolean {
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { request, locals, url, redirect } = context;
-  const runtime = (locals as any).runtime;
 
-  // Only run DB-dependent auth logic if runtime/DB is available (i.e., on Cloudflare)
-  if (runtime?.env?.DB) {
-    const db = runtime.env.DB;
+  // Only run DB-dependent auth logic if DB is available (i.e., on Cloudflare)
+  if (env?.DB) {
+    const db = env.DB;
     const token = getSessionToken(request);
 
     if (token) {

@@ -1,5 +1,11 @@
 name = "ipsumm"
 compatibility_date = "2024-12-01"
+workers_dev = true
+
+routes = [
+  { pattern = "ipsumm.co", custom_domain = true },
+  { pattern = "www.ipsumm.co", custom_domain = true },
+]
 
 [[d1_databases]]
 binding = "DB"

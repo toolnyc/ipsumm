@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { ApiResponse } from '../../../../lib/types';
 import { jsonResponse, encryptApiKey } from '../../../../lib/auth';
 import { saveOpenRouterKey } from '../../../../lib/db';
@@ -15,9 +16,8 @@ export const GET: APIRoute = async ({ url, locals, redirect }) => {
       return redirect('/settings?error=missing_code', 302);
     }
 
-    const runtime = (locals as any).runtime;
-    const db = runtime.env.DB;
-    const encryptionSecret = runtime.env.OPENROUTER_KEY_SECRET || 'ipsumm-default-dev-secret';
+    const db = env.DB;
+    const encryptionSecret = env.OPENROUTER_KEY_SECRET || 'ipsumm-default-dev-secret';
 
     // Exchange code for API key at OpenRouter
     const exchangeResponse = await fetch('https://openrouter.ai/api/v1/auth/keys', {

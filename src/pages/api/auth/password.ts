@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { ApiResponse } from '../../../lib/types';
 import {
   generateSalt,
@@ -31,7 +32,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ status: 'error', error: passwordError } satisfies ApiResponse, 400);
     }
 
-    const db = (locals as any).runtime.env.DB;
+    const db = env.DB;
     const dbUser = await getUserById(db, user.id);
     if (!dbUser) {
       return jsonResponse({ status: 'error', error: 'User not found' } satisfies ApiResponse, 404);

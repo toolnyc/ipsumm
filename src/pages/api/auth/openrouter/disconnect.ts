@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import type { ApiResponse } from '../../../../lib/types';
 import { jsonResponse } from '../../../../lib/auth';
 import { deleteOpenRouterConnection } from '../../../../lib/db';
@@ -10,7 +11,7 @@ export const POST: APIRoute = async ({ locals }) => {
       return jsonResponse({ status: 'error', error: 'Not authenticated' } satisfies ApiResponse, 401);
     }
 
-    const db = (locals as any).runtime.env.DB;
+    const db = env.DB;
     await deleteOpenRouterConnection(db, user.id);
 
     return jsonResponse({ status: 'ok' } satisfies ApiResponse);
