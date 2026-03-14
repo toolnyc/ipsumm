@@ -1,0 +1,228 @@
+---
+import AppShell from '../../layouts/AppShell.astro';
+import type { Mode } from '../../lib/types';
+
+const mode = Astro.url.searchParams.get('mode') as Mode | null;
+
+if (!mode || !['brainstorm', 'execute', 'refine'].includes(mode)) {
+  return Astro.redirect('/');
+}
+
+const modeColors: Record<Mode, string> = {
+  brainstorm: '#2563eb',
+  execute: '#059669',
+  refine: '#9333ea',
+};
+
+const modeLabels: Record<Mode, string> = {
+  brainstorm: 'Brainstorm',
+  execute: 'Execute',
+  refine: 'Refine',
+};
+---
+
+<AppShell title={`Preview — ${modeLabels[mode]}`}>
+  <div class="preview" data-mode={mode}>
+    <div class="preview-header">
+      <span class="mode-badge" style={`background: ${modeColors[mode]}`}>
+        {modeLabels[mode]}
+      </span>
+      <h1>Before you send</h1>
+      <p>Here's what you said and what we'll send to the model. You can edit the shaped prompt.</p>
+    </div>
+
+    <div class="columns">
+      <div class="column">
+        <h2>What you said</h2>
+        <div id="raw-input" class="content-box"></div>
+      </div>
+      <div class="column">
+        <h2>What we're sending</h2>
+        <textarea id="shaped-prompt" class="content-box editable" rows={8}></textarea>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a id="btn-back" class="btn btn-secondary" href={`/session/new?mode=${mode}`}>Back</a>
+      <button id="btn-send" class="btn btn-primary">Start session</button>
+    </div>
+
+    <p id="no-data" class="no-data" style="display: none;">
+      No intake data found. <a href={`/session/new?mode=${mode}`}>Start over</a>.
+    </p>
+  </div>
+
+  <style>
+    .preview {
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    .preview-header {
+      margin-bottom: 2rem;
+    }
+
+    .mode-badge {
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .preview-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .preview-header p {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .columns {
+      display: grid;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .columns {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .column h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #999;
+      margin-bottom: 0.5rem;
+    }
+
+    .content-box {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      min-height: 8rem;
+    }
+
+    .editable {
+      width: 100%;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .editable:focus {
+      outline: none;
+      border-color: #888;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    .btn-primary {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #999;
+      margin-top: 2rem;
+    }
+
+    .no-data a {
+      color: #2563eb;
+    }
+  </style>
+
+  <script define:vars={{ mode }}>
+    const rawData = sessionStorage.getItem(`ipsumm-intake-${mode}`);
+
+    if (!rawData) {
+      document.getElementById('no-data').style.display = 'block';
+      document.querySelector('.columns').style.display = 'none';
+      document.querySelector('.actions').style.display = 'none';
+    } else {
+      const answers = JSON.parse(rawData);
+
+      // Display raw input
+      const rawEl = document.getElementById('raw-input');
+      const entries = Object.entries(answers)
+        .filter(([_, v]) => v.trim())
+        .map(([k, v]) => `<p><strong>${k}:</strong> ${v}</p>`)
+        .join('');
+      rawEl.innerHTML = entries;
+
+      // Shape the prompt client-side (mirrors server logic)
+      function shapePrompt(mode, answers) {
+        if (mode === 'brainstorm') {
+          let p = `I want to brainstorm about: ${answers.exploring}\n\nA useful output would be: ${answers.output}\n\n`;
+          if (answers.constraints?.trim()) p += `Keep in mind: ${answers.constraints}\n\n`;
+          p += `Explore this openly. Suggest a range of ideas, not just the obvious ones. Don't finalize or pick a winner — keep things open and divergent.`;
+          return p;
+        }
+        if (mode === 'execute') {
+          let p = `I need to: ${answers.task}\n\nSuccess means: ${answers.success}\n\n`;
+          if (answers.context?.trim()) p += `What I have so far: ${answers.context}\n\n`;
+          p += `Be specific and actionable. Deliver exactly what was described as success. Don't explore tangents — stay focused on the deliverable.`;
+          return p;
+        }
+        if (mode === 'refine') {
+          let p = `Refine the previous output.\n\nWhat worked: ${answers.worked}\nWhat didn't: ${answers.didnt_work}\nWhat should change: ${answers.change}\n\n`;
+          p += `Improve the existing work based on this feedback. Don't start over or introduce entirely new topics — polish and tighten what's already there.`;
+          return p;
+        }
+        return '';
+      }
+
+      const shaped = shapePrompt(mode, answers);
+      document.getElementById('shaped-prompt').value = shaped;
+
+      // Send button — store final prompt and navigate
+      document.getElementById('btn-send').addEventListener('click', () => {
+        const finalPrompt = document.getElementById('shaped-prompt').value;
+        sessionStorage.setItem(`ipsumm-shaped-${mode}`, finalPrompt);
+        sessionStorage.setItem(`ipsumm-raw-${mode}`, rawData);
+        // TODO: navigate to actual session page once it exists
+        alert('Session would start here. Chat UI coming soon!');
+      });
+    }
+  </script>
+</AppShell>
