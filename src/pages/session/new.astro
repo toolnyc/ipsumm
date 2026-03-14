@@ -1,0 +1,234 @@
+---
+import AppShell from '../../layouts/AppShell.astro';
+import { getIntakeConfig } from '../../lib/prompt-shaping';
+import type { Mode } from '../../lib/types';
+
+const mode = Astro.url.searchParams.get('mode') as Mode | null;
+
+if (!mode || !['brainstorm', 'execute', 'refine'].includes(mode)) {
+  return Astro.redirect('/');
+}
+
+const config = getIntakeConfig(mode);
+
+const modeColors: Record<Mode, string> = {
+  brainstorm: '#2563eb',
+  execute: '#059669',
+  refine: '#9333ea',
+};
+
+const modeLabels: Record<Mode, string> = {
+  brainstorm: 'Brainstorm',
+  execute: 'Execute',
+  refine: 'Refine',
+};
+---
+
+<AppShell title={`${modeLabels[mode]} — New Session`}>
+  <div class="intake" data-mode={mode}>
+    <div class="intake-header">
+      <span class="mode-badge" style={`background: ${modeColors[mode]}`}>
+        {modeLabels[mode]}
+      </span>
+      <p class="step-indicator">
+        Question <span id="current-step">1</span> of {config.questions.length}
+      </p>
+    </div>
+
+    <div class="questions-container" id="questions-container">
+      {config.questions.map((q, i) => (
+        <div
+          class:list={['question-step', { active: i === 0, hidden: i !== 0 }]}
+          data-step={i}
+          data-id={q.id}
+          data-required={q.required}
+        >
+          <label for={`input-${q.id}`}>{q.question}</label>
+          <textarea
+            id={`input-${q.id}`}
+            name={q.id}
+            placeholder={q.placeholder}
+            rows={4}
+          />
+        </div>
+      ))}
+    </div>
+
+    <div class="actions">
+      <button id="btn-back" class="btn btn-secondary" disabled>Back</button>
+      <button id="btn-next" class="btn btn-primary">Next</button>
+    </div>
+  </div>
+
+  <style>
+    .intake {
+      max-width: 36rem;
+      margin: 0 auto;
+    }
+
+    .intake-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+
+    .mode-badge {
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .step-indicator {
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    .question-step {
+      transition: opacity 0.2s;
+    }
+
+    .question-step.hidden {
+      display: none;
+    }
+
+    label {
+      display: block;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.5;
+      resize: vertical;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #888;
+    }
+
+    textarea::placeholder {
+      color: #bbb;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      padding: 0.6rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .btn-primary {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e5e5e5;
+    }
+  </style>
+
+  <script define:vars={{ questionsJson: JSON.stringify(config.questions), mode }}>
+    const questions = JSON.parse(questionsJson);
+    const totalSteps = questions.length;
+    let currentStep = 0;
+    const answers = {};
+
+    const container = document.getElementById('questions-container');
+    const steps = container.querySelectorAll('.question-step');
+    const btnBack = document.getElementById('btn-back');
+    const btnNext = document.getElementById('btn-next');
+    const stepIndicator = document.getElementById('current-step');
+
+    function showStep(index) {
+      steps.forEach((step, i) => {
+        step.classList.toggle('active', i === index);
+        step.classList.toggle('hidden', i !== index);
+      });
+      stepIndicator.textContent = String(index + 1);
+      btnBack.disabled = index === 0;
+      btnNext.textContent = index === totalSteps - 1 ? 'Review' : 'Next';
+
+      const textarea = steps[index].querySelector('textarea');
+      if (textarea) textarea.focus();
+    }
+
+    function saveCurrentAnswer() {
+      const step = steps[currentStep];
+      const id = step.dataset.id;
+      const textarea = step.querySelector('textarea');
+      answers[id] = textarea.value;
+    }
+
+    function validateCurrentStep() {
+      const step = steps[currentStep];
+      const required = step.dataset.required === 'true';
+      const textarea = step.querySelector('textarea');
+      if (required && !textarea.value.trim()) {
+        textarea.style.borderColor = '#e55';
+        return false;
+      }
+      textarea.style.borderColor = '#ddd';
+      return true;
+    }
+
+    btnNext.addEventListener('click', () => {
+      if (!validateCurrentStep()) return;
+      saveCurrentAnswer();
+
+      if (currentStep < totalSteps - 1) {
+        currentStep++;
+        showStep(currentStep);
+      } else {
+        // All questions answered — store and navigate to preview
+        sessionStorage.setItem(`ipsumm-intake-${mode}`, JSON.stringify(answers));
+        window.location.href = `/session/preview?mode=${mode}`;
+      }
+    });
+
+    btnBack.addEventListener('click', () => {
+      if (currentStep > 0) {
+        saveCurrentAnswer();
+        currentStep--;
+        showStep(currentStep);
+      }
+    });
+  </script>
+</AppShell>
