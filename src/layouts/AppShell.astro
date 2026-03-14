@@ -1,0 +1,106 @@
+---
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { href: '/', label: 'Home' },
+  { href: '/history', label: 'History' },
+  { href: '/settings', label: 'Settings' },
+];
+---
+
+<Base title={title}>
+  <div class="app">
+    <header class="header">
+      <a href="/" class="logo">ipsumm</a>
+      <nav class="nav" aria-label="Main navigation">
+        {navItems.map((item) => (
+          <a
+            href={item.href}
+            class:list={['nav-link', { active: currentPath === item.href }]}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+    </header>
+
+    <main class="main">
+      <slot />
+    </main>
+  </div>
+
+  <style>
+    .app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #e5e5e5;
+      background: #fff;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .nav-link {
+      text-decoration: none;
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+
+    .nav-link:hover {
+      color: #1a1a1a;
+    }
+
+    .nav-link.active {
+      color: #1a1a1a;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem 1.5rem;
+      max-width: 64rem;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 640px) {
+      .header {
+        padding: 0.75rem 1rem;
+      }
+
+      .nav {
+        gap: 1rem;
+      }
+
+      .main {
+        padding: 1.5rem 1rem;
+      }
+    }
+  </style>
+</Base>
