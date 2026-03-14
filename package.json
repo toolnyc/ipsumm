@@ -13,7 +13,7 @@
     "astro": "astro",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy": "pnpm build && npx wrangler deploy --config dist/server/wrangler.json",
+    "deploy": "pnpm build && node scripts/fix-wrangler-config.cjs && npx wrangler deploy --config dist/server/wrangler.json",
     "db:migrate": "npx wrangler d1 execute ipsumm-db --remote --file=migrations/0001_auth_tables.sql"
   },
   "dependencies": {
