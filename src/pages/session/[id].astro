@@ -223,6 +223,7 @@ import AppShell from '../../layouts/AppShell.astro';
     import { generateWithHistory, loadModel, isLoaded, isSupported } from '../../lib/browser-llm';
     import { getSystemPrompt, buildSystemPrompt } from '../../lib/system-prompts';
     import { createSession, updateSession } from '../../lib/session-store';
+    import { getEnergyData } from '../../lib/energy-data';
     import type { Mode, Message } from '../../lib/types';
 
     const modeColors: Record<Mode, string> = {
@@ -269,7 +270,8 @@ import AppShell from '../../layouts/AppShell.astro';
     }
 
     async function startBrowserSession() {
-      modelInfo.textContent = 'In-browser model (Phi-3.5 Mini)';
+      const energy = getEnergyData('browser-local');
+      modelInfo.textContent = `In-browser (Phi-3.5 Mini) · ${energy.analogy}`;
 
       if (!isSupported()) {
         addMessage('system', 'Your browser does not support local AI. Connect OpenRouter in Settings for cloud models.');

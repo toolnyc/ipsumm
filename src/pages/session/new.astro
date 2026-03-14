@@ -35,6 +35,15 @@ const modeLabels: Record<Mode, string> = {
       </p>
     </div>
 
+    {mode === 'refine' && (
+      <div class="session-picker" id="session-picker">
+        <label>Which session do you want to refine?</label>
+        <select id="session-select">
+          <option value="">Select a previous session...</option>
+        </select>
+      </div>
+    )}
+
     <div class="questions-container" id="questions-container">
       {config.questions.map((q, i) => (
         <div
@@ -86,6 +95,21 @@ const modeLabels: Record<Mode, string> = {
     .step-indicator {
       font-size: 0.85rem;
       color: #999;
+    }
+
+    .session-picker {
+      margin-bottom: 1.5rem;
+    }
+
+    .session-picker select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      background: #fff;
     }
 
     .question-step {
@@ -230,5 +254,31 @@ const modeLabels: Record<Mode, string> = {
         showStep(currentStep);
       }
     });
+  </script>
+
+  <script>
+    // Populate refine session picker (needs IndexedDB access)
+    import { listSessions } from '../../lib/session-store';
+
+    const select = document.getElementById('session-select') as HTMLSelectElement | null;
+    if (select) {
+      listSessions().then((sessions) => {
+        if (sessions.length === 0) {
+          const opt = document.createElement('option');
+          opt.textContent = 'No previous sessions found';
+          opt.disabled = true;
+          select.appendChild(opt);
+          return;
+        }
+        sessions.forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          const date = new Date(s.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const preview = s.shapedPrompt.slice(0, 60) + (s.shapedPrompt.length > 60 ? '...' : '');
+          opt.textContent = `[${s.mode}] ${date} — ${preview}`;
+          select.appendChild(opt);
+        });
+      });
+    }
   </script>
 </AppShell>
