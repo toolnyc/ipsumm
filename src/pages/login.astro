@@ -1,0 +1,183 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Log in">
+  <div class="auth-page">
+    <div class="auth-card">
+      <a href="/" class="auth-logo">ipsumm</a>
+      <h1>Welcome back</h1>
+      <p class="subtitle">Log in to your account.</p>
+
+      <form id="login-form" class="auth-form">
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required autocomplete="email" />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password" />
+        </div>
+
+        <div id="error" class="error" hidden></div>
+
+        <button type="submit" class="btn">Log in</button>
+      </form>
+
+      <p class="alt-action">Don't have an account? <a href="/signup">Sign up</a></p>
+    </div>
+  </div>
+
+  <style>
+    .auth-page {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 24rem;
+    }
+
+    .auth-logo {
+      display: block;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    input {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d4d4d4;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    input:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+    }
+
+    .error {
+      padding: 0.5rem 0.75rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.375rem;
+      color: #dc2626;
+      font-size: 0.875rem;
+    }
+
+    .btn {
+      padding: 0.625rem 1rem;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: #333;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .alt-action {
+      margin-top: 1.5rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: #666;
+    }
+
+    .alt-action a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .alt-action a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <script>
+    const form = document.getElementById('login-form') as HTMLFormElement;
+    const errorEl = document.getElementById('error') as HTMLDivElement;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.hidden = true;
+
+      const email = (form.querySelector('#email') as HTMLInputElement).value;
+      const password = (form.querySelector('#password') as HTMLInputElement).value;
+      const btn = form.querySelector('button') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Logging in...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'Something went wrong';
+          errorEl.hidden = false;
+          return;
+        }
+
+        window.location.href = '/';
+      } catch {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.hidden = false;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Log in';
+      }
+    });
+  </script>
+</Base>
