@@ -4,22 +4,21 @@ import { describe, it, expect, vi } from 'vitest';
 // so we test the module's pure functions by importing them dynamically
 // and test the interface contract rather than the WebLLM internals.
 
+vi.mock('@mlc-ai/web-llm', () => ({
+  MLCEngine: class MockEngine {
+    setInitProgressCallback() {}
+    async reload() {}
+    chat = {
+      completions: {
+        create: async () => ({ [Symbol.asyncIterator]: async function* () {} }),
+      },
+    };
+    async unload() {}
+  },
+}));
+
 describe('browser-llm', () => {
   it('module exports the expected interface', async () => {
-    // Mock the webllm module before importing browser-llm
-    vi.mock('@mlc-ai/web-llm', () => ({
-      MLCEngine: class MockEngine {
-        setInitProgressCallback() {}
-        async reload() {}
-        chat = {
-          completions: {
-            create: async () => ({ [Symbol.asyncIterator]: async function* () {} }),
-          },
-        };
-        async unload() {}
-      },
-    }));
-
     const mod = await import('../src/lib/browser-llm');
     expect(typeof mod.isSupported).toBe('function');
     expect(typeof mod.isLoaded).toBe('function');
