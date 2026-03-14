@@ -18,6 +18,7 @@ function makeSession(overrides: Partial<Omit<Session, 'id'>> = {}) {
     conversation: [{ role: 'user' as const, content: 'hello' }],
     modelUsed: 'browser-local',
     cost: 0,
+    tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
     energyEstimate: 0,
     outcome: null,
     reflection: null,

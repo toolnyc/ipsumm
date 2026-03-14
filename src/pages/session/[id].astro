@@ -7,6 +7,7 @@ import AppShell from '../../layouts/AppShell.astro';
     <div class="session-header">
       <span class="mode-badge" id="mode-badge"></span>
       <span class="model-info" id="model-info"></span>
+      <span class="energy-badge" id="energy-badge"></span>
       <span class="cost-display" id="cost-display">$0.00</span>
     </div>
 
@@ -65,6 +66,21 @@ import AppShell from '../../layouts/AppShell.astro';
       font-size: 0.8rem;
       color: #999;
     }
+
+    .energy-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.75rem;
+      display: none;
+    }
+
+    .energy-badge.rating-A { background: #dcfce7; color: #166534; }
+    .energy-badge.rating-B { background: #dbeafe; color: #1e40af; }
+    .energy-badge.rating-C { background: #fef9c3; color: #854d0e; }
+    .energy-badge.rating-D { background: #fed7aa; color: #9a3412; }
+    .energy-badge.rating-E { background: #fecaca; color: #991b1b; }
+    .energy-badge.rating-local { background: #f0fdf4; color: #166534; }
 
     .cost-display {
       margin-left: auto;
@@ -224,7 +240,9 @@ import AppShell from '../../layouts/AppShell.astro';
     import { getSystemPrompt, buildSystemPrompt } from '../../lib/system-prompts';
     import { createSession, updateSession } from '../../lib/session-store';
     import { getEnergyData } from '../../lib/energy-data';
-    import type { Mode, Message } from '../../lib/types';
+    import { selectModel } from '../../lib/routing';
+    import { calculateCost } from '../../lib/openrouter';
+    import type { Mode, Message, SessionTokenUsage } from '../../lib/types';
 
     const modeColors: Record<Mode, string> = {
       brainstorm: '#2563eb',
@@ -235,8 +253,6 @@ import AppShell from '../../layouts/AppShell.astro';
     // Get session params from URL and sessionStorage
     const pathParts = window.location.pathname.split('/');
     const sessionId = pathParts[pathParts.length - 1];
-
-    // For now, read mode and prompt from sessionStorage (set by preview page)
     const params = new URLSearchParams(window.location.search);
     const mode = (params.get('mode') || 'brainstorm') as Mode;
     const shapedPrompt = sessionStorage.getItem(`ipsumm-shaped-${mode}`) || '';
@@ -245,13 +261,20 @@ import AppShell from '../../layouts/AppShell.astro';
 
     const conversation: Message[] = [];
     let isGenerating = false;
+    let useCloud = false;
+    let cloudModelId = '';
+    let cloudTemperature = 0.7;
+    let totalCost = 0;
+    let totalTokens: SessionTokenUsage = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
-    // Set up header
+    // DOM
     const badge = document.getElementById('mode-badge')!;
     badge.textContent = mode;
     badge.style.background = modeColors[mode];
 
     const modelInfo = document.getElementById('model-info')!;
+    const energyBadge = document.getElementById('energy-badge')!;
+    const costDisplay = document.getElementById('cost-display')!;
     const messagesEl = document.getElementById('messages')!;
     const userInput = document.getElementById('user-input') as HTMLTextAreaElement;
     const btnSend = document.getElementById('btn-send') as HTMLButtonElement;
@@ -259,6 +282,19 @@ import AppShell from '../../layouts/AppShell.astro';
     const loadingEl = document.getElementById('model-loading')!;
     const loadingText = document.getElementById('loading-text')!;
     const progressFill = document.getElementById('progress-fill')!;
+
+    function updateCostDisplay() {
+      costDisplay.textContent = totalCost < 0.01
+        ? `$${totalCost.toFixed(4)}`
+        : `$${totalCost.toFixed(2)}`;
+    }
+
+    function showEnergyBadge(rating: string, analogy: string) {
+      energyBadge.textContent = rating === 'local' ? 'On-device' : `Energy: ${rating}`;
+      energyBadge.className = `energy-badge rating-${rating}`;
+      energyBadge.title = analogy;
+      energyBadge.style.display = 'inline-block';
+    }
 
     function addMessage(role: 'user' | 'assistant' | 'system', content: string): HTMLElement {
       const div = document.createElement('div');
@@ -269,37 +305,105 @@ import AppShell from '../../layouts/AppShell.astro';
       return div;
     }
 
-    async function startBrowserSession() {
-      const energy = getEnergyData('browser-local');
-      modelInfo.textContent = `In-browser (Phi-3.5 Mini) · ${energy.analogy}`;
-
-      if (!isSupported()) {
-        addMessage('system', 'Your browser does not support local AI. Connect OpenRouter in Settings for cloud models.');
-        return;
+    // Check if user has OpenRouter connected
+    async function checkCloudAvailability(): Promise<boolean> {
+      try {
+        const res = await fetch('/api/auth/openrouter/status');
+        if (!res.ok) return false;
+        const data = await res.json();
+        return data.connected === true;
+      } catch {
+        return false;
       }
-
-      if (!isLoaded()) {
-        loadingEl.style.display = 'block';
-        await loadModel((p) => {
-          loadingText.textContent = p.text;
-          progressFill.style.width = `${Math.round(p.progress * 100)}%`;
-        });
-        loadingEl.style.display = 'none';
-      }
-
-      // Send the shaped prompt
-      const systemPrompt = buildSystemPrompt(mode);
-      conversation.push({ role: 'system', content: systemPrompt });
-      conversation.push({ role: 'user', content: shapedPrompt });
-
-      addMessage('user', shapedPrompt);
-      await generateResponse();
     }
 
-    async function generateResponse() {
+    // Stream from cloud via /api/chat
+    async function cloudGenerate(messages: Message[]): Promise<string> {
       isGenerating = true;
       btnSend.disabled = true;
+      const assistantDiv = addMessage('assistant', '');
+      let fullResponse = '';
 
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: cloudModelId,
+          messages,
+          temperature: cloudTemperature,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Request failed' }));
+        const msg = (err as any).error || 'Cloud model error';
+        assistantDiv.textContent = msg;
+        assistantDiv.className = 'message system-msg';
+        isGenerating = false;
+        btnSend.disabled = false;
+        return '';
+      }
+
+      // Parse SSE stream
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let chunkUsage: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number } | null = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop()!;
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (!trimmed.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+            const content = data.choices?.[0]?.delta?.content;
+            if (content) {
+              fullResponse += content;
+              assistantDiv.textContent = fullResponse;
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+            if (data.usage) {
+              chunkUsage = data.usage;
+            }
+          } catch {
+            // skip malformed lines
+          }
+        }
+      }
+
+      // Update cost tracking
+      if (chunkUsage) {
+        const usage = {
+          prompt_tokens: chunkUsage.prompt_tokens ?? 0,
+          completion_tokens: chunkUsage.completion_tokens ?? 0,
+          total_tokens: chunkUsage.total_tokens ?? 0,
+        };
+        totalTokens.prompt_tokens += usage.prompt_tokens;
+        totalTokens.completion_tokens += usage.completion_tokens;
+        totalTokens.total_tokens += usage.total_tokens;
+        totalCost += calculateCost(cloudModelId, usage);
+        updateCostDisplay();
+      }
+
+      conversation.push({ role: 'assistant', content: fullResponse });
+      isGenerating = false;
+      btnSend.disabled = false;
+      return fullResponse;
+    }
+
+    // Browser LLM generate
+    async function browserGenerate(): Promise<string> {
+      isGenerating = true;
+      btnSend.disabled = true;
       const assistantDiv = addMessage('assistant', '');
       let fullResponse = '';
 
@@ -317,46 +421,118 @@ import AppShell from '../../layouts/AppShell.astro';
       conversation.push({ role: 'assistant', content: fullResponse });
       isGenerating = false;
       btnSend.disabled = false;
+      return fullResponse;
     }
 
-    async function sendFollowUp() {
-      const text = userInput.value.trim();
+    async function sendMessage(text: string) {
       if (!text || isGenerating) return;
-
-      userInput.value = '';
       conversation.push({ role: 'user', content: text });
       addMessage('user', text);
-      await generateResponse();
+
+      if (useCloud) {
+        await cloudGenerate(conversation);
+      } else {
+        await browserGenerate();
+      }
     }
 
-    btnSend.addEventListener('click', sendFollowUp);
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendFollowUp();
+    async function startSession() {
+      const hasCloud = await checkCloudAvailability();
+
+      if (hasCloud) {
+        // Use cloud model
+        useCloud = true;
+        const modelConfig = selectModel(mode);
+        cloudModelId = modelConfig.modelId;
+        cloudTemperature = modelConfig.temperature;
+
+        const energy = getEnergyData(cloudModelId);
+        modelInfo.textContent = `${modelConfig.displayName}`;
+        if (energy.rating !== 'local') {
+          showEnergyBadge(energy.rating, energy.analogy);
+        }
+
+        // Build system prompt and send shaped prompt
+        const systemPrompt = buildSystemPrompt(mode);
+        conversation.push({ role: 'system', content: systemPrompt });
+        conversation.push({ role: 'user', content: shapedPrompt });
+        addMessage('user', shapedPrompt);
+
+        await cloudGenerate(conversation);
+      } else {
+        // Fall back to browser LLM
+        useCloud = false;
+        const energy = getEnergyData('browser-local');
+        modelInfo.textContent = `In-browser (Phi-3.5 Mini)`;
+        showEnergyBadge('local', energy.analogy);
+        costDisplay.textContent = '$0.00';
+
+        if (!isSupported()) {
+          addMessage('system', 'Your browser does not support local AI. Connect OpenRouter in Settings for cloud models.');
+          return;
+        }
+
+        if (!isLoaded()) {
+          loadingEl.style.display = 'block';
+          await loadModel((p) => {
+            loadingText.textContent = p.text;
+            progressFill.style.width = `${Math.round(p.progress * 100)}%`;
+          });
+          loadingEl.style.display = 'none';
+        }
+
+        const systemPrompt = buildSystemPrompt(mode);
+        conversation.push({ role: 'system', content: systemPrompt });
+        conversation.push({ role: 'user', content: shapedPrompt });
+        addMessage('user', shapedPrompt);
+
+        await browserGenerate();
+      }
+    }
+
+    // Follow-up messages
+    btnSend.addEventListener('click', () => {
+      const text = userInput.value.trim();
+      if (text) {
+        userInput.value = '';
+        sendMessage(text);
       }
     });
 
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const text = userInput.value.trim();
+        if (text) {
+          userInput.value = '';
+          sendMessage(text);
+        }
+      }
+    });
+
+    // End session
     btnEnd.addEventListener('click', async () => {
-      // Save session to IndexedDB
+      const modelUsed = useCloud ? cloudModelId : 'browser-local';
+      const energy = getEnergyData(modelUsed);
+      const energyEstimate = energy.rating === 'local' ? 0 : energy.kwhPerQuery;
+
       const session = await createSession({
         mode,
         timestamp: Date.now(),
         rawInput,
         shapedPrompt,
         conversation: conversation.filter((m) => m.role !== 'system'),
-        modelUsed: 'browser-local',
-        cost: 0,
-        energyEstimate: 0,
+        modelUsed,
+        cost: totalCost,
+        tokenUsage: totalTokens,
+        energyEstimate,
         outcome: null,
         reflection: null,
       });
 
-      // Navigate to outtake for reflection
       window.location.href = `/session/outtake?session=${session.id}&mode=${mode}`;
     });
 
-    // Start the session
-    startBrowserSession();
+    startSession();
   </script>
 </AppShell>

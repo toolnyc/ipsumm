@@ -25,6 +25,8 @@ export function exportSessionMarkdown(session: Session): string {
     `success_criteria: "${escapeYaml(successCriteria)}"`,
     `model: ${session.modelUsed}`,
     `cost: ${session.cost}`,
+    `tokens_prompt: ${session.tokenUsage?.prompt_tokens ?? 0}`,
+    `tokens_completion: ${session.tokenUsage?.completion_tokens ?? 0}`,
     `energy_kwh: ${session.energyEstimate}`,
     `outcome: ${session.outcome ?? 'null'}`,
     `timestamp: ${date}`,

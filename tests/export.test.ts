@@ -14,6 +14,7 @@ const mockSession: Session = {
   ],
   modelUsed: 'browser-local',
   cost: 0,
+  tokenUsage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
   energyEstimate: 0,
   outcome: 'yes',
   reflection: 'Got some good ideas to start with.',

@@ -57,6 +57,12 @@ export interface Message {
   content: string;
 }
 
+export interface SessionTokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
 export interface Session {
   id: string;
   mode: Mode;
@@ -66,6 +72,7 @@ export interface Session {
   conversation: Message[];
   modelUsed: string;
   cost: number;
+  tokenUsage: SessionTokenUsage;
   energyEstimate: number;
   outcome: Outcome | null;
   reflection: string | null;
