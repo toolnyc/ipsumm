@@ -220,8 +220,8 @@ const modeLabels: Record<Mode, string> = {
         const finalPrompt = document.getElementById('shaped-prompt').value;
         sessionStorage.setItem(`ipsumm-shaped-${mode}`, finalPrompt);
         sessionStorage.setItem(`ipsumm-raw-${mode}`, rawData);
-        // TODO: navigate to actual session page once it exists
-        alert('Session would start here. Chat UI coming soon!');
+        const sessionId = crypto.randomUUID();
+        window.location.href = `/session/${sessionId}?mode=${mode}`;
       });
     }
   </script>
