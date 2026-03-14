@@ -1,0 +1,7 @@
+name = "ipsumm"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ipsumm-db"
+database_id = "f3dd2a75-1782-4057-b2fc-801ff82d325e"

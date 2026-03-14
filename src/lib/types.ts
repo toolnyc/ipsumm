@@ -9,6 +9,46 @@ export interface HealthResponse {
   timestamp: number;
 }
 
+// Auth types
+export interface User {
+  id: string;
+  email: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface AuthSession {
+  token: string;
+  user_id: string;
+  created_at: number;
+  expires_at: number;
+}
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface OpenRouterConnection {
+  user_id: string;
+  connected_at: number;
+}
+
 export type Mode = 'brainstorm' | 'execute' | 'refine';
 export type Outcome = 'yes' | 'partially' | 'no';
 
