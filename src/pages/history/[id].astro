@@ -1,0 +1,304 @@
+---
+import AppShell from '../../layouts/AppShell.astro';
+---
+
+<AppShell title="Session Detail">
+  <div class="detail" id="detail">
+    <div class="detail-header">
+      <a href="/history" class="back-link">&larr; Back to history</a>
+    </div>
+
+    <div id="session-content" style="display: none;">
+      <div class="meta" id="meta"></div>
+      <div class="shaped-prompt-section">
+        <h2>Shaped Prompt</h2>
+        <blockquote id="shaped-prompt"></blockquote>
+      </div>
+      <div class="conversation" id="conversation"></div>
+      <div class="reflection-section" id="reflection-section" style="display: none;">
+        <h2>Reflection</h2>
+        <p id="reflection-text"></p>
+      </div>
+      <div class="detail-actions">
+        <button id="btn-refine" class="btn btn-primary">Refine this session</button>
+        <button id="btn-export" class="btn btn-secondary">Export as Markdown</button>
+      </div>
+    </div>
+
+    <p id="not-found" class="not-found" style="display: none;">
+      Session not found. <a href="/history">Back to history</a>.
+    </p>
+  </div>
+
+  <style>
+    .detail {
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      font-size: 0.85rem;
+      color: #666;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      color: #1a1a1a;
+    }
+
+    .detail-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .meta-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #999;
+      font-weight: 600;
+    }
+
+    .meta-value {
+      color: #333;
+      font-weight: 500;
+    }
+
+    .mode-badge {
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 1rem;
+      text-transform: uppercase;
+    }
+
+    h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #999;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .shaped-prompt-section {
+      margin-bottom: 1.5rem;
+    }
+
+    blockquote {
+      padding: 0.75rem 1rem;
+      background: #f9f9f9;
+      border-left: 3px solid #ddd;
+      border-radius: 0 0.5rem 0.5rem 0;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .conversation {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .msg {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 85%;
+      white-space: pre-wrap;
+    }
+
+    .msg.user {
+      background: #f0f0f0;
+      align-self: flex-end;
+    }
+
+    .msg.assistant {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      align-self: flex-start;
+    }
+
+    .reflection-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .reflection-section p {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: #555;
+    }
+
+    .detail-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      padding: 0.6rem 1.25rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.85;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+
+    .not-found {
+      text-align: center;
+      color: #999;
+      padding: 3rem;
+    }
+
+    .not-found a {
+      color: #2563eb;
+    }
+
+    @media (max-width: 640px) {
+      .detail-actions {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+  <script>
+    import { getSession } from '../../lib/session-store';
+    import { exportSessionMarkdown } from '../../lib/export';
+    import type { Mode } from '../../lib/types';
+
+    const modeColors: Record<Mode, string> = {
+      brainstorm: '#2563eb',
+      execute: '#059669',
+      refine: '#9333ea',
+    };
+
+    const outcomeLabels: Record<string, string> = {
+      yes: 'Yes — got what I needed',
+      partially: 'Partially',
+      no: 'No',
+    };
+
+    const pathParts = window.location.pathname.split('/');
+    const sessionId = pathParts[pathParts.length - 1];
+
+    async function loadSession() {
+      const session = await getSession(sessionId);
+
+      if (!session) {
+        document.getElementById('not-found')!.style.display = 'block';
+        return;
+      }
+
+      document.getElementById('session-content')!.style.display = 'block';
+
+      // Meta
+      const date = new Date(session.timestamp).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+
+      const metaEl = document.getElementById('meta')!;
+      metaEl.innerHTML = `
+        <div class="meta-item">
+          <span class="meta-label">Mode</span>
+          <span class="mode-badge" style="background: ${modeColors[session.mode]}">${session.mode}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Date</span>
+          <span class="meta-value">${date}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Model</span>
+          <span class="meta-value">${session.modelUsed === 'browser-local' ? 'In-browser' : session.modelUsed}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Cost</span>
+          <span class="meta-value">${session.cost > 0 ? `$${session.cost.toFixed(4)}` : 'Free'}</span>
+        </div>
+        ${session.outcome ? `
+        <div class="meta-item">
+          <span class="meta-label">Outcome</span>
+          <span class="meta-value">${outcomeLabels[session.outcome] || session.outcome}</span>
+        </div>` : ''}
+      `;
+
+      // Shaped prompt
+      document.getElementById('shaped-prompt')!.textContent = session.shapedPrompt;
+
+      // Conversation
+      const convEl = document.getElementById('conversation')!;
+      session.conversation.forEach((msg) => {
+        const div = document.createElement('div');
+        div.className = `msg ${msg.role}`;
+        div.textContent = msg.content;
+        convEl.appendChild(div);
+      });
+
+      // Reflection
+      if (session.reflection) {
+        document.getElementById('reflection-section')!.style.display = 'block';
+        document.getElementById('reflection-text')!.textContent = session.reflection;
+      }
+
+      // Refine button
+      document.getElementById('btn-refine')!.addEventListener('click', () => {
+        window.location.href = `/session/new?mode=refine&from=${session.id}`;
+      });
+
+      // Export button
+      document.getElementById('btn-export')!.addEventListener('click', () => {
+        const markdown = exportSessionMarkdown(session);
+
+        const blob = new Blob([markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ipsumm-${session.mode}-${new Date(session.timestamp).toISOString().slice(0, 10)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    loadSession();
+  </script>
+</AppShell>
