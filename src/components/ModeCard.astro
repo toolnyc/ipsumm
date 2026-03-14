@@ -1,0 +1,80 @@
+---
+interface Props {
+  mode: 'brainstorm' | 'execute' | 'refine';
+  title: string;
+  description: string;
+  color: string;
+  disabled?: boolean;
+  disabledReason?: string;
+}
+
+const { mode, title, description, color, disabled = false, disabledReason } = Astro.props;
+const href = disabled ? undefined : `/session/new?mode=${mode}`;
+---
+
+{disabled ? (
+  <div class="card disabled" style={`--accent: ${color}`}>
+    <div class="indicator" />
+    <h2>{title}</h2>
+    <p>{description}</p>
+    {disabledReason && <p class="reason">{disabledReason}</p>}
+  </div>
+) : (
+  <a href={href} class="card" style={`--accent: ${color}`}>
+    <div class="indicator" />
+    <h2>{title}</h2>
+    <p>{description}</p>
+  </a>
+)}
+
+<style>
+  .card {
+    display: block;
+    padding: 1.5rem;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card:hover:not(.disabled) {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .card.disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .indicator {
+    width: 2.5rem;
+    height: 0.25rem;
+    background: var(--accent);
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .reason {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    font-style: italic;
+    color: #999;
+  }
+</style>

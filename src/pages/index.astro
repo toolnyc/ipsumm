@@ -1,8 +1,65 @@
 ---
 import AppShell from '../layouts/AppShell.astro';
+import ModeCard from '../components/ModeCard.astro';
 ---
 
 <AppShell title="Home">
-  <h1>ipsumm</h1>
-  <p>Intentional AI usage starts here.</p>
+  <section class="hero">
+    <h1>What do you want to do?</h1>
+    <p>Pick a mode to get started. Each one shapes your session differently.</p>
+  </section>
+
+  <div class="modes">
+    <ModeCard
+      mode="brainstorm"
+      title="Brainstorm"
+      description="Explore ideas and think out loud. No pressure to finalize anything."
+      color="#2563eb"
+    />
+    <ModeCard
+      mode="execute"
+      title="Execute"
+      description="Get something specific done. You'll define what success looks like first."
+      color="#059669"
+    />
+    <ModeCard
+      mode="refine"
+      title="Refine"
+      description="Improve something from a previous session. Polish what you already have."
+      color="#9333ea"
+      disabled
+      disabledReason="Start a session first, then come back to refine it."
+    />
+  </div>
+
+  <style>
+    .hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero p {
+      color: #666;
+      font-size: 1rem;
+    }
+
+    .modes {
+      display: grid;
+      gap: 1.25rem;
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 640px) {
+      .modes {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
 </AppShell>
