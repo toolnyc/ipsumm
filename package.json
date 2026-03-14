@@ -12,7 +12,9 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "pnpm build && npx wrangler deploy --config dist/server/wrangler.json",
+    "db:migrate": "npx wrangler d1 execute ipsumm-db --remote --file=migrations/0001_auth_tables.sql"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.1.1",
