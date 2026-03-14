@@ -1,0 +1,365 @@
+---
+import AppShell from '../../layouts/AppShell.astro';
+---
+
+<AppShell title="Session">
+  <div class="session" id="session-container">
+    <div class="session-header">
+      <span class="mode-badge" id="mode-badge"></span>
+      <span class="model-info" id="model-info"></span>
+      <span class="cost-display" id="cost-display">$0.00</span>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area" id="input-area">
+      <textarea
+        id="user-input"
+        placeholder="Send a follow-up message..."
+        rows={2}
+      ></textarea>
+      <button id="btn-send" class="btn-send">Send</button>
+    </div>
+
+    <div class="session-actions">
+      <button id="btn-end" class="btn btn-secondary">End session</button>
+    </div>
+
+    <div id="model-loading" class="model-loading" style="display: none;">
+      <p id="loading-text">Loading model...</p>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .session {
+      max-width: 48rem;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100dvh - 10rem);
+    }
+
+    .session-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #e5e5e5;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-badge {
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .model-info {
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    .cost-display {
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: #999;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .messages {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-bottom: 1.5rem;
+    }
+
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 85%;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      background: #f0f0f0;
+      align-self: flex-end;
+      color: #1a1a1a;
+    }
+
+    .message.assistant {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      align-self: flex-start;
+    }
+
+    .message.system-msg {
+      background: #fef3cd;
+      align-self: center;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #856404;
+    }
+
+    .thinking {
+      color: #999;
+      font-style: italic;
+      padding: 0.5rem 1rem;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .input-area textarea {
+      flex: 1;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 0.5rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: none;
+    }
+
+    .input-area textarea:focus {
+      outline: none;
+      border-color: #888;
+    }
+
+    .btn-send {
+      padding: 0.6rem 1.25rem;
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-send:hover {
+      opacity: 0.85;
+    }
+
+    .btn-send:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .session-actions {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 1rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1.25rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e5e5;
+    }
+
+    .model-loading {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .model-loading p {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      max-width: 20rem;
+      height: 0.5rem;
+      background: #e5e5e5;
+      border-radius: 1rem;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #2563eb;
+      border-radius: 1rem;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    @media (max-width: 640px) {
+      .session-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+    }
+  </style>
+
+  <script>
+    import { generateWithHistory, loadModel, isLoaded, isSupported } from '../../lib/browser-llm';
+    import { getSystemPrompt, buildSystemPrompt } from '../../lib/system-prompts';
+    import { createSession, updateSession } from '../../lib/session-store';
+    import type { Mode, Message } from '../../lib/types';
+
+    const modeColors: Record<Mode, string> = {
+      brainstorm: '#2563eb',
+      execute: '#059669',
+      refine: '#9333ea',
+    };
+
+    // Get session params from URL and sessionStorage
+    const pathParts = window.location.pathname.split('/');
+    const sessionId = pathParts[pathParts.length - 1];
+
+    // For now, read mode and prompt from sessionStorage (set by preview page)
+    const params = new URLSearchParams(window.location.search);
+    const mode = (params.get('mode') || 'brainstorm') as Mode;
+    const shapedPrompt = sessionStorage.getItem(`ipsumm-shaped-${mode}`) || '';
+    const rawInputStr = sessionStorage.getItem(`ipsumm-raw-${mode}`) || '{}';
+    const rawInput = JSON.parse(rawInputStr);
+
+    const conversation: Message[] = [];
+    let isGenerating = false;
+
+    // Set up header
+    const badge = document.getElementById('mode-badge')!;
+    badge.textContent = mode;
+    badge.style.background = modeColors[mode];
+
+    const modelInfo = document.getElementById('model-info')!;
+    const messagesEl = document.getElementById('messages')!;
+    const userInput = document.getElementById('user-input') as HTMLTextAreaElement;
+    const btnSend = document.getElementById('btn-send') as HTMLButtonElement;
+    const btnEnd = document.getElementById('btn-end') as HTMLButtonElement;
+    const loadingEl = document.getElementById('model-loading')!;
+    const loadingText = document.getElementById('loading-text')!;
+    const progressFill = document.getElementById('progress-fill')!;
+
+    function addMessage(role: 'user' | 'assistant' | 'system', content: string): HTMLElement {
+      const div = document.createElement('div');
+      div.className = `message ${role === 'system' ? 'system-msg' : role}`;
+      div.textContent = content;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return div;
+    }
+
+    async function startBrowserSession() {
+      modelInfo.textContent = 'In-browser model (Phi-3.5 Mini)';
+
+      if (!isSupported()) {
+        addMessage('system', 'Your browser does not support local AI. Connect OpenRouter in Settings for cloud models.');
+        return;
+      }
+
+      if (!isLoaded()) {
+        loadingEl.style.display = 'block';
+        await loadModel((p) => {
+          loadingText.textContent = p.text;
+          progressFill.style.width = `${Math.round(p.progress * 100)}%`;
+        });
+        loadingEl.style.display = 'none';
+      }
+
+      // Send the shaped prompt
+      const systemPrompt = buildSystemPrompt(mode);
+      conversation.push({ role: 'system', content: systemPrompt });
+      conversation.push({ role: 'user', content: shapedPrompt });
+
+      addMessage('user', shapedPrompt);
+      await generateResponse();
+    }
+
+    async function generateResponse() {
+      isGenerating = true;
+      btnSend.disabled = true;
+
+      const assistantDiv = addMessage('assistant', '');
+      let fullResponse = '';
+
+      try {
+        await generateWithHistory(conversation, (token) => {
+          fullResponse += token;
+          assistantDiv.textContent = fullResponse;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        });
+      } catch (err: any) {
+        assistantDiv.textContent = `Error: ${err.message}`;
+        assistantDiv.className = 'message system-msg';
+      }
+
+      conversation.push({ role: 'assistant', content: fullResponse });
+      isGenerating = false;
+      btnSend.disabled = false;
+    }
+
+    async function sendFollowUp() {
+      const text = userInput.value.trim();
+      if (!text || isGenerating) return;
+
+      userInput.value = '';
+      conversation.push({ role: 'user', content: text });
+      addMessage('user', text);
+      await generateResponse();
+    }
+
+    btnSend.addEventListener('click', sendFollowUp);
+    userInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendFollowUp();
+      }
+    });
+
+    btnEnd.addEventListener('click', async () => {
+      // Save session to IndexedDB
+      const session = await createSession({
+        mode,
+        timestamp: Date.now(),
+        rawInput,
+        shapedPrompt,
+        conversation: conversation.filter((m) => m.role !== 'system'),
+        modelUsed: 'browser-local',
+        cost: 0,
+        energyEstimate: 0,
+        outcome: null,
+        reflection: null,
+      });
+
+      // Clean up sessionStorage
+      sessionStorage.removeItem(`ipsumm-intake-${mode}`);
+      sessionStorage.removeItem(`ipsumm-shaped-${mode}`);
+      sessionStorage.removeItem(`ipsumm-raw-${mode}`);
+
+      // Navigate to outtake (or history for now)
+      window.location.href = `/history`;
+    });
+
+    // Start the session
+    startBrowserSession();
+  </script>
+</AppShell>
