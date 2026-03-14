@@ -350,13 +350,8 @@ import AppShell from '../../layouts/AppShell.astro';
         reflection: null,
       });
 
-      // Clean up sessionStorage
-      sessionStorage.removeItem(`ipsumm-intake-${mode}`);
-      sessionStorage.removeItem(`ipsumm-shaped-${mode}`);
-      sessionStorage.removeItem(`ipsumm-raw-${mode}`);
-
-      // Navigate to outtake (or history for now)
-      window.location.href = `/history`;
+      // Navigate to outtake for reflection
+      window.location.href = `/session/outtake?session=${session.id}&mode=${mode}`;
     });
 
     // Start the session
