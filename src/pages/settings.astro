@@ -287,11 +287,9 @@ const errorParam = searchParams.get('error');
             if (r.ok) window.location.reload();
           });
         } else {
-          const callbackUrl = encodeURIComponent(window.location.origin + '/api/auth/openrouter/callback');
-          const connectUrl = `https://openrouter.ai/auth?callback_url=${callbackUrl}&limit=500&usage_limit_type=monthly`;
           container.innerHTML = `
             <p class="detail">Not connected.</p>
-            <a href="${connectUrl}" class="btn btn-connect" style="display:inline-block; text-decoration:none; color:#fff;">Connect your AI budget</a>
+            <a href="/api/auth/openrouter/connect" class="btn btn-connect" style="display:inline-block; text-decoration:none; color:#fff;">Connect your AI budget</a>
           `;
         }
       } catch {

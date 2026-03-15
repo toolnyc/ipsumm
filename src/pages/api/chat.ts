@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request }) => {
     return jsonResponse({ status: 'error', error: 'OpenRouter not connected' }, 400);
   }
 
-  const secret = env.ENCRYPTION_KEY || import.meta.env.ENCRYPTION_KEY || 'dev-encryption-key-not-for-prod!';
+  const secret = env.ENCRYPTION_KEY || 'ipsumm-default-dev-secret';
   let apiKey: string;
   try {
     apiKey = await decryptApiKey(connection.encrypted_api_key, connection.iv, secret);

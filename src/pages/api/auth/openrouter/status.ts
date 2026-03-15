@@ -12,7 +12,7 @@ export const GET: APIRoute = async ({ locals }) => {
     }
 
     const db = env.DB;
-    const encryptionSecret = env.OPENROUTER_KEY_SECRET || 'ipsumm-default-dev-secret';
+    const encryptionSecret = env.ENCRYPTION_KEY || 'ipsumm-default-dev-secret';
 
     const connection = await getOpenRouterConnection(db, user.id);
     if (!connection) {
