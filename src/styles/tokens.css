@@ -1,0 +1,285 @@
+/*
+ * ipsumm design tokens
+ * Aesthetic: warm cream, near-black text, amber accent, sharp geometry
+ * Inspired by relace.ai — no shadows, no gradients, depth through type + whitespace
+ *
+ * FONTS (local, already installed on dev machine):
+ *   - New Montreal  → headers
+ *   - Inter         → body copy (Google Fonts / system fallback)
+ *   - KH Interference → captions, numbers, data display
+ *
+ * For production: copy font files to public/fonts/ and update src() paths below.
+ */
+
+/* ─── Font Faces ─────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'New Montreal';
+  src: url('/fonts/PPNeueMontreal-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'New Montreal';
+  src: url('/fonts/PPNeueMontreal-Italic.ttf') format('truetype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'New Montreal';
+  src: url('/fonts/PPNeueMontreal-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'New Montreal';
+  src: url('/fonts/PPNeueMontreal-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'New Montreal';
+  src: url('/fonts/PPNeueMontreal-BoldItalic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KH Interference';
+  src: url('/fonts/KHInterference-Light.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KH Interference';
+  src: url('/fonts/KHInterference-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'KH Interference';
+  src: url('/fonts/KHInterference-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ─── Tokens ─────────────────────────────────────────────────────────────── */
+
+:root {
+  /* --- Color: Backgrounds --- */
+  --bg-page:    #fffef2;                    /* warm cream — primary page surface */
+  --bg-subtle:  #f3f2e7;                    /* off-white — cards, code blocks, inputs */
+  --bg-muted:   #e3e2d8;                    /* warm gray — hover states */
+  --bg-nav:     rgba(255, 254, 242, 0.82);  /* cream @ 82% — frosted nav bar */
+
+  /* --- Color: Text --- */
+  --text-primary:   #191918;                /* warm near-black */
+  --text-secondary: #bab9b0;                /* medium taupe — captions, metadata */
+  --text-disabled:  rgba(25, 25, 24, 0.30); /* 30% — disabled / placeholder */
+
+  /* --- Color: Borders --- */
+  --border-default: #e3e2d8;                /* warm light gray */
+  --border-subtle:  rgba(25, 25, 24, 0.10); /* 10% — hairlines */
+  --border-strong:  rgba(25, 25, 24, 0.30); /* 30% — emphasized separators */
+
+  /* --- Color: Accent (amber) --- */
+  --accent:         #fcaa2d;                /* golden amber — CTAs, selection, highlights */
+  --accent-dark:    #a36404;                /* burnt sienna — hover / active state */
+  --accent-muted:   rgba(252, 170, 45, 0.15); /* 15% tint — subtle accent backgrounds */
+
+  /* --- Color: Overlay --- */
+  --overlay: rgba(25, 25, 24, 0.60);        /* modal/drawer backdrop */
+
+  /* ─────────────────────────────────────────────────────────────────────── */
+
+  /* --- Typography: Families --- */
+  --font-heading: 'New Montreal', 'PP Neue Montreal', Georgia, serif;
+  --font-body:    'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-data:    'KH Interference', 'Courier New', Courier, monospace;
+
+  /* --- Typography: Scale --- */
+  --text-2xs: 0.6875rem;  /* 11px — micro labels */
+  --text-xs:  0.75rem;    /* 12px — captions, tags */
+  --text-sm:  0.875rem;   /* 14px — secondary text, nav */
+  --text-base: 1rem;      /* 16px — body default */
+  --text-lg:  1.125rem;   /* 18px */
+  --text-xl:  1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 2rem;       /* 32px */
+  --text-4xl: 2.75rem;    /* 44px — section headers */
+  --text-5xl: 3.75rem;    /* 60px — hero */
+
+  /* --- Typography: Line Heights --- */
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.6;
+  --leading-relaxed: 1.75;
+
+  /* --- Typography: Letter Spacing --- */
+  --tracking-tight:  -0.02em;
+  --tracking-normal:  0em;
+  --tracking-wide:    0.05em;
+  --tracking-wider:   0.10em;
+  --tracking-widest:  0.15em;
+
+  /* --- Typography: Weights --- */
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-bold:    700;
+
+  /* ─────────────────────────────────────────────────────────────────────── */
+
+  /* --- Spacing (8px base unit) --- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-11: 44px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+
+  /* --- Layout: Content Widths --- */
+  --container-sm:  480px;
+  --container-md:  810px;
+  --container-lg:  1064px;
+  --container-xl:  1200px;
+
+  /* --- Border Radius --- */
+  /* relace.ai is fully sharp — use 0 as default, sm only when you really need it */
+  --radius-none: 0px;
+  --radius-sm:   2px;
+  --radius-md:   4px;
+  --radius-pill: 9999px;  /* tags, status badges only */
+
+  /* --- Transitions --- */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease;
+  --transition-slow: 250ms ease;
+
+  /* --- Shadows --- */
+  /* relace.ai uses no shadows — depth comes from color contrast + whitespace.
+     Defined here for exceptional use cases (floating menus, modals). */
+  --shadow-none: none;
+  --shadow-sm:   0 1px 3px  rgba(25, 25, 24, 0.08);
+  --shadow-md:   0 4px 12px rgba(25, 25, 24, 0.08);
+  --shadow-lg:   0 8px 32px rgba(25, 25, 24, 0.10);
+}
+
+/* ─── Global Base ────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+::selection {
+  background-color: var(--accent);
+  color: #fff;
+}
+
+html {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background-color: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+/* ─── Typography Defaults ────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-primary);
+}
+
+h1 { font-size: var(--text-5xl); }
+h2 { font-size: var(--text-4xl); }
+h3 { font-size: var(--text-3xl); }
+h4 { font-size: var(--text-2xl); }
+h5 { font-size: var(--text-xl); }
+h6 { font-size: var(--text-lg); }
+
+p {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+}
+
+/* Data display — numbers, metrics, captions, labels */
+.font-data,
+caption,
+time,
+[data-display] {
+  font-family: var(--font-data);
+  letter-spacing: var(--tracking-normal);
+}
+
+/* Muted / secondary text */
+.text-secondary {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+/* Accent text */
+.text-accent {
+  color: var(--accent);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-default);
+}
+
+code, pre, kbd {
+  font-family: var(--font-data);
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--bg-subtle);
+  padding: var(--space-4);
+  overflow-x: auto;
+}

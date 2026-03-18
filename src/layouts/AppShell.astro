@@ -45,62 +45,62 @@ const navItems = [
     }
 
     .header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid #e5e5e5;
-      background: #fff;
+      padding: var(--space-3) var(--space-10);
+      border-bottom: 1px solid var(--border-default);
+      background: var(--bg-nav);
     }
 
     .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      text-decoration: none;
-      color: #1a1a1a;
-      letter-spacing: -0.02em;
+      font-family: var(--font-heading);
+      font-size: var(--text-lg);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-tight);
+      color: var(--text-primary);
     }
 
     .nav {
       display: flex;
-      gap: 1.5rem;
+      gap: var(--space-8);
     }
 
     .nav-link {
-      text-decoration: none;
-      color: #666;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: color 0.15s;
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      color: var(--text-secondary);
+      transition: color var(--transition-base);
     }
 
-    .nav-link:hover {
-      color: #1a1a1a;
-    }
-
+    .nav-link:hover,
     .nav-link.active {
-      color: #1a1a1a;
+      color: var(--text-primary);
     }
 
     .main {
       flex: 1;
-      padding: 2rem 1.5rem;
-      max-width: 64rem;
+      padding: var(--space-10) var(--space-10);
+      max-width: var(--container-lg);
       width: 100%;
       margin: 0 auto;
     }
 
     @media (max-width: 640px) {
       .header {
-        padding: 0.75rem 1rem;
+        padding: var(--space-3) var(--space-5);
       }
 
       .nav {
-        gap: 1rem;
+        gap: var(--space-6);
       }
 
       .main {
-        padding: 1.5rem 1rem;
+        padding: var(--space-6) var(--space-5);
       }
     }
   </style>
